@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -27,6 +29,8 @@ import ru.netology.cloudservicediploma.storage.FileContentStorage;
 
 @Service
 public class DefaultCloudFileService implements CloudFileService {
+
+    private static final Logger log = LoggerFactory.getLogger(DefaultCloudFileService.class);
 
     private final StoredFileRepository storedFileRepository;
     private final UserRepository userRepository;
@@ -57,10 +61,12 @@ public class DefaultCloudFileService implements CloudFileService {
     @Override
     @Transactional(readOnly = true)
     public List<FileMetadata> listFiles(Long userId, int limit) {
-        return storedFileRepository.findAllByUserIdOrderByUploadedAtDesc(userId, PageRequest.of(0, limit))
+        List<FileMetadata> files = storedFileRepository.findAllByUserIdOrderByUploadedAtDesc(userId, PageRequest.of(0, limit))
                 .stream()
                 .map(file -> new FileMetadata(file.getFilename(), file.getSize()))
                 .toList();
+        log.debug("Listed files: userId={}, limit={}, count={}", userId, limit, files.size());
+        return files;
     }
 
     @Override
@@ -88,6 +94,7 @@ public class DefaultCloudFileService implements CloudFileService {
                     now
             );
             storedFileRepository.save(storedFile);
+            log.info("File uploaded: userId={}, filename={}, size={}", userId, sanitizedFilename, file.getSize());
         } catch (IOException exception) {
             throw new StorageException("Failed to read uploaded file", exception);
         }
@@ -101,6 +108,7 @@ public class DefaultCloudFileService implements CloudFileService {
                 .orElseThrow(CloudFileNotFoundException::new);
         fileContentStorage.delete(storedFile.getStoragePath());
         storedFileRepository.delete(storedFile);
+        log.info("File deleted: userId={}, filename={}", userId, sanitizedFilename);
     }
 
     @Override
@@ -119,6 +127,12 @@ public class DefaultCloudFileService implements CloudFileService {
                 .orElseThrow(CloudFileNotFoundException::new);
         String newStoragePath = fileContentStorage.move(userId, storedFile.getStoragePath(), sanitizedTargetFilename);
         storedFile.rename(sanitizedTargetFilename, newStoragePath, Instant.now(clock));
+        log.info(
+                "File renamed: userId={}, sourceFilename={}, targetFilename={}",
+                userId,
+                sanitizedSourceFilename,
+                sanitizedTargetFilename
+        );
     }
 
     @Override
@@ -127,6 +141,7 @@ public class DefaultCloudFileService implements CloudFileService {
         String sanitizedFilename = FileNameSanitizer.sanitize(filename);
         StoredFileEntity storedFile = storedFileRepository.findByUserIdAndFilename(userId, sanitizedFilename)
                 .orElseThrow(CloudFileNotFoundException::new);
+        log.debug("File download requested: userId={}, filename={}", userId, sanitizedFilename);
 
         return new DownloadedFile(
                 storedFile.getFilename(),
