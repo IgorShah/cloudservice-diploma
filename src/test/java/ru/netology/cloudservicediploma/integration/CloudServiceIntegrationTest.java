@@ -144,6 +144,29 @@ class CloudServiceIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void missingRequestParameterReturnsBadRequestMessage() throws Exception {
+        String authToken = loginAndGetToken();
+
+        mockMvc.perform(delete("/file")
+                        .header("auth-token", authToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Error input data"));
+    }
+
+    @Test
+    void unreadableJsonReturnsBadRequestMessage() throws Exception {
+        String authToken = loginAndGetToken();
+
+        mockMvc.perform(put("/file")
+                        .param("filename", "notes.txt")
+                        .header("auth-token", authToken)
+                        .contentType(APPLICATION_JSON)
+                        .content("{"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Error input data"));
+    }
+
     private String loginAndGetToken() throws Exception {
         MvcResult result = mockMvc.perform(post("/login")
                         .contentType(APPLICATION_JSON)

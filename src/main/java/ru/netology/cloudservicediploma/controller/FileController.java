@@ -3,6 +3,8 @@ package ru.netology.cloudservicediploma.controller;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.util.List;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,7 +37,7 @@ public class FileController {
     }
 
     @GetMapping("/list")
-    public java.util.List<FileResponse> listFiles(
+    public List<FileResponse> listFiles(
             @CurrentUser AuthenticatedUser user,
             @RequestParam(defaultValue = "100") @Min(1) @Max(1000) int limit
     ) {
@@ -64,14 +67,14 @@ public class FileController {
     public ResponseEntity<Void> renameFile(
             @CurrentUser AuthenticatedUser user,
             @RequestParam String filename,
-            @Valid @org.springframework.web.bind.annotation.RequestBody RenameFileRequest request
+            @Valid @RequestBody RenameFileRequest request
     ) {
         cloudFileService.renameFile(user, filename, request.filename());
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/file")
-    public ResponseEntity<org.springframework.core.io.Resource> downloadFile(
+    public ResponseEntity<Resource> downloadFile(
             @CurrentUser AuthenticatedUser user,
             @RequestParam String filename
     ) {
