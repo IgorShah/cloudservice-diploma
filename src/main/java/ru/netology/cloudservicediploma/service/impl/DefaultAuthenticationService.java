@@ -7,7 +7,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.netology.cloudservicediploma.config.ApplicationProperties;
-import ru.netology.cloudservicediploma.dto.response.AuthTokenResponse;
 import ru.netology.cloudservicediploma.entity.SessionTokenEntity;
 import ru.netology.cloudservicediploma.entity.UserEntity;
 import ru.netology.cloudservicediploma.exception.BadRequestException;
@@ -62,7 +61,7 @@ public class DefaultAuthenticationService implements AuthenticationService {
 
     @Override
     @Transactional
-    public AuthTokenResponse login(String login, String password) {
+    public String login(String login, String password) {
         UserEntity user = userRepository.findByLogin(login)
                 .orElseThrow(() -> new BadRequestException("Bad credentials"));
 
@@ -79,7 +78,7 @@ public class DefaultAuthenticationService implements AuthenticationService {
                 true
         );
         sessionTokenRepository.save(sessionToken);
-        return new AuthTokenResponse(token);
+        return token;
     }
 
     @Override

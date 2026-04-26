@@ -10,7 +10,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import ru.netology.cloudservicediploma.dto.response.FileResponse;
 import ru.netology.cloudservicediploma.entity.StoredFileEntity;
 import ru.netology.cloudservicediploma.entity.UserEntity;
 import ru.netology.cloudservicediploma.exception.BadRequestException;
@@ -20,8 +19,9 @@ import ru.netology.cloudservicediploma.repository.UserRepository;
 import ru.netology.cloudservicediploma.security.AuthenticatedUser;
 import ru.netology.cloudservicediploma.service.CloudFileService;
 import ru.netology.cloudservicediploma.service.DownloadedFile;
-import ru.netology.cloudservicediploma.storage.FileContentStorage;
 import ru.netology.cloudservicediploma.service.FileNameSanitizer;
+import ru.netology.cloudservicediploma.service.FileMetadata;
+import ru.netology.cloudservicediploma.storage.FileContentStorage;
 
 @Service
 public class DefaultCloudFileService implements CloudFileService {
@@ -54,10 +54,10 @@ public class DefaultCloudFileService implements CloudFileService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<FileResponse> listFiles(AuthenticatedUser user, int limit) {
+    public List<FileMetadata> listFiles(AuthenticatedUser user, int limit) {
         return storedFileRepository.findAllByUserIdOrderByUploadedAtDesc(user.id(), PageRequest.of(0, limit))
                 .stream()
-                .map(file -> new FileResponse(file.getFilename(), file.getSize()))
+                .map(file -> new FileMetadata(file.getFilename(), file.getSize()))
                 .toList();
     }
 

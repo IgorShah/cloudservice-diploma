@@ -20,7 +20,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import ru.netology.cloudservicediploma.config.ApplicationProperties;
-import ru.netology.cloudservicediploma.dto.response.AuthTokenResponse;
 import ru.netology.cloudservicediploma.entity.SessionTokenEntity;
 import ru.netology.cloudservicediploma.entity.UserEntity;
 import ru.netology.cloudservicediploma.exception.BadRequestException;
@@ -75,9 +74,9 @@ class DefaultAuthenticationServiceTest {
         when(tokenGenerator.generate()).thenReturn("token-123");
         when(tokenHasher.hash("token-123")).thenReturn("token-hash-123");
 
-        AuthTokenResponse response = authenticationService.login("user@example.com", "password");
+        String authToken = authenticationService.login("user@example.com", "password");
 
-        assertThat(response.authToken()).isEqualTo("token-123");
+        assertThat(authToken).isEqualTo("token-123");
         verify(sessionTokenRepository).save(any(SessionTokenEntity.class));
     }
 

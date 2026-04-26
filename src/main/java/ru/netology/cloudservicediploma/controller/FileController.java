@@ -25,6 +25,7 @@ import ru.netology.cloudservicediploma.security.AuthenticatedUser;
 import ru.netology.cloudservicediploma.security.CurrentUser;
 import ru.netology.cloudservicediploma.service.CloudFileService;
 import ru.netology.cloudservicediploma.service.DownloadedFile;
+import ru.netology.cloudservicediploma.service.FileMetadata;
 
 @Validated
 @RestController
@@ -41,7 +42,10 @@ public class FileController {
             @CurrentUser AuthenticatedUser user,
             @RequestParam(defaultValue = "100") @Min(1) @Max(1000) int limit
     ) {
-        return cloudFileService.listFiles(user, limit);
+        return cloudFileService.listFiles(user, limit)
+                .stream()
+                .map(this::toFileResponse)
+                .toList();
     }
 
     @PostMapping(value = "/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -91,5 +95,9 @@ public class FileController {
                         ContentDisposition.attachment().filename(downloadedFile.filename()).build().toString()
                 )
                 .body(downloadedFile.resource());
+    }
+
+    private FileResponse toFileResponse(FileMetadata fileMetadata) {
+        return new FileResponse(fileMetadata.filename(), fileMetadata.size());
     }
 }
