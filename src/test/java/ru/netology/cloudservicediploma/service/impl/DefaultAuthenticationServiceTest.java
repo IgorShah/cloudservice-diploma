@@ -29,6 +29,7 @@ import ru.netology.cloudservicediploma.repository.SessionTokenRepository;
 import ru.netology.cloudservicediploma.repository.UserRepository;
 import ru.netology.cloudservicediploma.security.AuthenticatedUser;
 import ru.netology.cloudservicediploma.service.TokenGenerator;
+import ru.netology.cloudservicediploma.service.TokenHasher;
 
 @ExtendWith(MockitoExtension.class)
 class DefaultAuthenticationServiceTest {
@@ -41,13 +42,15 @@ class DefaultAuthenticationServiceTest {
     private PasswordEncoder passwordEncoder;
     @Mock
     private TokenGenerator tokenGenerator;
+    @Mock
+    private TokenHasher tokenHasher;
 
     private DefaultAuthenticationService authenticationService;
 
     @BeforeEach
     void setUp() {
         ApplicationProperties properties = new ApplicationProperties(
-                new ApplicationProperties.Auth(Duration.ofHours(24)),
+                new ApplicationProperties.Auth(Duration.ofHours(24), 3_600_000),
                 new ApplicationProperties.Storage(Path.of("storage")),
                 new ApplicationProperties.Cors(List.of("http://localhost:8081")),
                 List.of(new ApplicationProperties.SeedUser("user@example.com", "password"))
@@ -58,6 +61,7 @@ class DefaultAuthenticationServiceTest {
                 sessionTokenRepository,
                 passwordEncoder,
                 tokenGenerator,
+                tokenHasher,
                 clock,
                 properties
         );
@@ -69,6 +73,7 @@ class DefaultAuthenticationServiceTest {
         when(userRepository.findByLogin("user@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password", "hash")).thenReturn(true);
         when(tokenGenerator.generate()).thenReturn("token-123");
+        when(tokenHasher.hash("token-123")).thenReturn("token-hash-123");
 
         AuthTokenResponse response = authenticationService.login("user@example.com", "password");
 
@@ -96,7 +101,8 @@ class DefaultAuthenticationServiceTest {
                 Instant.parse("2026-04-25T10:15:30Z"),
                 true
         );
-        when(sessionTokenRepository.findByTokenAndActiveTrue("token-123")).thenReturn(Optional.of(expiredToken));
+        when(tokenHasher.hash("token-123")).thenReturn("token-hash-123");
+        when(sessionTokenRepository.findByTokenHashAndActiveTrue("token-hash-123")).thenReturn(Optional.of(expiredToken));
 
         assertThatThrownBy(() -> authenticationService.authenticate("token-123"))
                 .isInstanceOf(UnauthorizedException.class)
@@ -114,7 +120,8 @@ class DefaultAuthenticationServiceTest {
                 Instant.parse("2026-04-26T10:15:30Z"),
                 true
         );
-        when(sessionTokenRepository.findByTokenAndActiveTrue("token-123")).thenReturn(Optional.of(sessionToken));
+        when(tokenHasher.hash("token-123")).thenReturn("token-hash-123");
+        when(sessionTokenRepository.findByTokenHashAndActiveTrue("token-hash-123")).thenReturn(Optional.of(sessionToken));
 
         AuthenticatedUser authenticatedUser = authenticationService.authenticate("token-123");
 

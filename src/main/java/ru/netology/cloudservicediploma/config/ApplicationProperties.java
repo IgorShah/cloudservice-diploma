@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -19,7 +20,10 @@ public record ApplicationProperties(
         @Valid @NotEmpty List<SeedUser> users
 ) {
 
-    public record Auth(@NotNull Duration sessionTtl) {
+    public record Auth(
+            @NotNull Duration sessionTtl,
+            @Positive long expiredTokenCleanupDelayMs
+    ) {
     }
 
     public record Storage(@NotNull Path rootPath) {

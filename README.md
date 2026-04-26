@@ -104,7 +104,7 @@ auth-token: <TOKEN>
 
 Файлы хранятся на диске отдельно от БД. В PostgreSQL хранятся пользователи, токены и метаданные файлов.
 
-Авторизация настроена через Spring Security `SecurityFilterChain`. Form login и HTTP Basic отключены, используется stateless-проверка заголовка `auth-token`. JWT не используется, токены хранятся на стороне сервера в таблице `session_token`, что позволяет деактивировать токен при `/logout`.
+Авторизация настроена через Spring Security `SecurityFilterChain`. Form login и HTTP Basic отключены, используется stateless-проверка заголовка `auth-token`. JWT не используется: клиент получает raw token, а в PostgreSQL хранится только SHA-256 hash токена. Это позволяет деактивировать сессию при `/logout` и не хранить raw token в БД.
 
 ## Конфигурация
 
@@ -142,6 +142,14 @@ Password: cloudservice
 
 ```text
 src/main/resources/db/migration/V1__init_schema.sql
+```
+
+Истекшие токены периодически удаляются scheduled-задачей. Интервал задается настройкой:
+
+```yaml
+app:
+  auth:
+    expired-token-cleanup-delay-ms: 3600000
 ```
 
 ## Тесты

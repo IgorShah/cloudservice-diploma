@@ -10,7 +10,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import ru.netology.cloudservicediploma.entity.UserEntity;
 
 @Entity
 @Table(name = "session_token")
@@ -20,8 +19,8 @@ public class SessionTokenEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String token;
+    @Column(name = "token_hash", nullable = false, unique = true)
+    private String tokenHash;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
@@ -36,15 +35,15 @@ public class SessionTokenEntity {
     protected SessionTokenEntity() {
     }
 
-    public SessionTokenEntity(String token, UserEntity user, Instant expiresAt, boolean active) {
-        this.token = token;
+    public SessionTokenEntity(String tokenHash, UserEntity user, Instant expiresAt, boolean active) {
+        this.tokenHash = tokenHash;
         this.user = user;
         this.expiresAt = expiresAt;
         this.active = active;
     }
 
-    public String getToken() {
-        return token;
+    public String getTokenHash() {
+        return tokenHash;
     }
 
     public UserEntity getUser() {

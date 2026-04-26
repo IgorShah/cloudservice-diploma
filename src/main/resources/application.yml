@@ -33,6 +33,7 @@ management:
 app:
   auth:
     session-ttl: PT24H
+    expired-token-cleanup-delay-ms: 3600000
   storage:
     root-path: ${APP_STORAGE_ROOT:./storage}
   cors:
