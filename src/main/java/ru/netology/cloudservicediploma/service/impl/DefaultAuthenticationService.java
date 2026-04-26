@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.netology.cloudservicediploma.config.ApplicationProperties;
 import ru.netology.cloudservicediploma.entity.SessionTokenEntity;
 import ru.netology.cloudservicediploma.entity.UserEntity;
-import ru.netology.cloudservicediploma.exception.BadRequestException;
+import ru.netology.cloudservicediploma.exception.InvalidCredentialsException;
 import ru.netology.cloudservicediploma.exception.UnauthorizedException;
 import ru.netology.cloudservicediploma.repository.SessionTokenRepository;
 import ru.netology.cloudservicediploma.repository.UserRepository;
@@ -63,10 +63,10 @@ public class DefaultAuthenticationService implements AuthenticationService {
     @Transactional
     public String login(String login, String password) {
         UserEntity user = userRepository.findByLogin(login)
-                .orElseThrow(() -> new BadRequestException("Bad credentials"));
+                .orElseThrow(InvalidCredentialsException::new);
 
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            throw new BadRequestException("Bad credentials");
+            throw new InvalidCredentialsException();
         }
 
         Instant now = Instant.now(clock);

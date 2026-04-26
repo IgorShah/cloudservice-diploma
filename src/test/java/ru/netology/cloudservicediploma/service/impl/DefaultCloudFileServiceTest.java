@@ -19,7 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import ru.netology.cloudservicediploma.entity.StoredFileEntity;
 import ru.netology.cloudservicediploma.entity.UserEntity;
-import ru.netology.cloudservicediploma.exception.BadRequestException;
+import ru.netology.cloudservicediploma.exception.FileAlreadyExistsException;
 import ru.netology.cloudservicediploma.repository.StoredFileRepository;
 import ru.netology.cloudservicediploma.repository.UserRepository;
 import ru.netology.cloudservicediploma.security.AuthenticatedUser;
@@ -70,7 +70,7 @@ class DefaultCloudFileServiceTest {
         when(storedFileRepository.existsByUserIdAndFilename(1L, "renamed.txt")).thenReturn(true);
 
         assertThatThrownBy(() -> cloudFileService.renameFile(user, "notes.txt", "renamed.txt"))
-                .isInstanceOf(BadRequestException.class)
+                .isInstanceOf(FileAlreadyExistsException.class)
                 .hasMessage("File already exists");
     }
 

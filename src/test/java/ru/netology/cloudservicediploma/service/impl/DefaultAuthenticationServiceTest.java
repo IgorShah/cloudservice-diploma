@@ -22,7 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import ru.netology.cloudservicediploma.config.ApplicationProperties;
 import ru.netology.cloudservicediploma.entity.SessionTokenEntity;
 import ru.netology.cloudservicediploma.entity.UserEntity;
-import ru.netology.cloudservicediploma.exception.BadRequestException;
+import ru.netology.cloudservicediploma.exception.InvalidCredentialsException;
 import ru.netology.cloudservicediploma.exception.UnauthorizedException;
 import ru.netology.cloudservicediploma.repository.SessionTokenRepository;
 import ru.netology.cloudservicediploma.repository.UserRepository;
@@ -87,7 +87,7 @@ class DefaultAuthenticationServiceTest {
         when(passwordEncoder.matches("wrong", "hash")).thenReturn(false);
 
         assertThatThrownBy(() -> authenticationService.login("user@example.com", "wrong"))
-                .isInstanceOf(BadRequestException.class)
+                .isInstanceOf(InvalidCredentialsException.class)
                 .hasMessage("Bad credentials");
     }
 

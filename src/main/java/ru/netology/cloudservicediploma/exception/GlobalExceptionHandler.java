@@ -23,6 +23,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(exception.getStatus()).body(new ErrorResponse(exception.getMessage()));
     }
 
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException exception) {
+        return ResponseEntity.badRequest().body(new ErrorResponse(exception.getMessage()));
+    }
+
     @ExceptionHandler({MethodArgumentNotValidException.class, ConstraintViolationException.class})
     public ResponseEntity<ErrorResponse> handleValidationException(Exception exception) {
         if (exception instanceof MethodArgumentNotValidException validationException) {

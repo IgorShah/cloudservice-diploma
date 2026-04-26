@@ -1,6 +1,6 @@
 package ru.netology.cloudservicediploma.service;
 
-import ru.netology.cloudservicediploma.exception.BadRequestException;
+import ru.netology.cloudservicediploma.exception.InvalidFileNameException;
 
 public final class FileNameSanitizer {
 
@@ -9,7 +9,7 @@ public final class FileNameSanitizer {
 
     public static String sanitize(String rawFileName) {
         if (rawFileName == null) {
-            throw new BadRequestException("Filename must not be empty");
+            throw new InvalidFileNameException("Filename must not be empty");
         }
 
         String fileName = rawFileName.trim();
@@ -18,7 +18,7 @@ public final class FileNameSanitizer {
                 || fileName.contains("\\")
                 || ".".equals(fileName)
                 || "..".equals(fileName)) {
-            throw new BadRequestException("Filename is invalid");
+            throw new InvalidFileNameException("Filename is invalid");
         }
 
         return fileName;

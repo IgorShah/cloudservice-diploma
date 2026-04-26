@@ -12,8 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import ru.netology.cloudservicediploma.entity.StoredFileEntity;
 import ru.netology.cloudservicediploma.entity.UserEntity;
-import ru.netology.cloudservicediploma.exception.BadRequestException;
+import ru.netology.cloudservicediploma.exception.CloudFileNotFoundException;
+import ru.netology.cloudservicediploma.exception.EmptyFileException;
+import ru.netology.cloudservicediploma.exception.FileAlreadyExistsException;
 import ru.netology.cloudservicediploma.exception.StorageException;
+import ru.netology.cloudservicediploma.exception.UserNotFoundException;
 import ru.netology.cloudservicediploma.repository.StoredFileRepository;
 import ru.netology.cloudservicediploma.repository.UserRepository;
 import ru.netology.cloudservicediploma.security.AuthenticatedUser;
@@ -66,10 +69,10 @@ public class DefaultCloudFileService implements CloudFileService {
     public void uploadFile(AuthenticatedUser user, String filename, MultipartFile file) {
         String sanitizedFilename = FileNameSanitizer.sanitize(filename);
         if (file.isEmpty()) {
-            throw new BadRequestException("File must not be empty");
+            throw new EmptyFileException();
         }
         if (storedFileRepository.existsByUserIdAndFilename(user.id(), sanitizedFilename)) {
-            throw new BadRequestException("File already exists");
+            throw new FileAlreadyExistsException();
         }
 
         UserEntity persistedUser = loadUser(user.id());
@@ -96,7 +99,7 @@ public class DefaultCloudFileService implements CloudFileService {
     public void deleteFile(AuthenticatedUser user, String filename) {
         String sanitizedFilename = FileNameSanitizer.sanitize(filename);
         StoredFileEntity storedFile = storedFileRepository.findByUserIdAndFilename(user.id(), sanitizedFilename)
-                .orElseThrow(() -> new BadRequestException("File not found"));
+                .orElseThrow(CloudFileNotFoundException::new);
         fileContentStorage.delete(storedFile.getStoragePath());
         storedFileRepository.delete(storedFile);
     }
@@ -110,11 +113,11 @@ public class DefaultCloudFileService implements CloudFileService {
             return;
         }
         if (storedFileRepository.existsByUserIdAndFilename(user.id(), sanitizedTargetFilename)) {
-            throw new BadRequestException("File already exists");
+            throw new FileAlreadyExistsException();
         }
 
         StoredFileEntity storedFile = storedFileRepository.findByUserIdAndFilename(user.id(), sanitizedSourceFilename)
-                .orElseThrow(() -> new BadRequestException("File not found"));
+                .orElseThrow(CloudFileNotFoundException::new);
         String newStoragePath = fileContentStorage.move(user.id(), storedFile.getStoragePath(), sanitizedTargetFilename);
         storedFile.rename(sanitizedTargetFilename, newStoragePath, Instant.now(clock));
     }
@@ -124,7 +127,7 @@ public class DefaultCloudFileService implements CloudFileService {
     public DownloadedFile downloadFile(AuthenticatedUser user, String filename) {
         String sanitizedFilename = FileNameSanitizer.sanitize(filename);
         StoredFileEntity storedFile = storedFileRepository.findByUserIdAndFilename(user.id(), sanitizedFilename)
-                .orElseThrow(() -> new BadRequestException("File not found"));
+                .orElseThrow(CloudFileNotFoundException::new);
 
         return new DownloadedFile(
                 storedFile.getFilename(),
@@ -136,6 +139,6 @@ public class DefaultCloudFileService implements CloudFileService {
 
     private UserEntity loadUser(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new BadRequestException("User not found"));
+                .orElseThrow(UserNotFoundException::new);
     }
 }
