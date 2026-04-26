@@ -2,17 +2,16 @@ package ru.netology.cloudservicediploma.service;
 
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
-import ru.netology.cloudservicediploma.security.AuthenticatedUser;
 
 public interface CloudFileService {
 
-    List<FileMetadata> listFiles(AuthenticatedUser user, int limit);
+    List<FileMetadata> listFiles(Long userId, int limit);
 
-    void uploadFile(AuthenticatedUser user, String filename, MultipartFile file);
+    void uploadFile(Long userId, String filename, MultipartFile file);
 
-    void deleteFile(AuthenticatedUser user, String filename);
+    void deleteFile(Long userId, String filename);
 
-    void renameFile(AuthenticatedUser user, String sourceFilename, String targetFilename);
+    void renameFile(Long userId, String sourceFilename, String targetFilename);
 
-    DownloadedFile downloadFile(AuthenticatedUser user, String filename);
+    DownloadedFile downloadFile(Long userId, String filename);
 }

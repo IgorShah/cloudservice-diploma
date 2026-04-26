@@ -19,7 +19,6 @@ import ru.netology.cloudservicediploma.exception.StorageException;
 import ru.netology.cloudservicediploma.exception.UserNotFoundException;
 import ru.netology.cloudservicediploma.repository.StoredFileRepository;
 import ru.netology.cloudservicediploma.repository.UserRepository;
-import ru.netology.cloudservicediploma.security.AuthenticatedUser;
 import ru.netology.cloudservicediploma.service.CloudFileService;
 import ru.netology.cloudservicediploma.service.DownloadedFile;
 import ru.netology.cloudservicediploma.service.FileNameSanitizer;
@@ -57,8 +56,8 @@ public class DefaultCloudFileService implements CloudFileService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<FileMetadata> listFiles(AuthenticatedUser user, int limit) {
-        return storedFileRepository.findAllByUserIdOrderByUploadedAtDesc(user.id(), PageRequest.of(0, limit))
+    public List<FileMetadata> listFiles(Long userId, int limit) {
+        return storedFileRepository.findAllByUserIdOrderByUploadedAtDesc(userId, PageRequest.of(0, limit))
                 .stream()
                 .map(file -> new FileMetadata(file.getFilename(), file.getSize()))
                 .toList();
@@ -66,18 +65,18 @@ public class DefaultCloudFileService implements CloudFileService {
 
     @Override
     @Transactional
-    public void uploadFile(AuthenticatedUser user, String filename, MultipartFile file) {
+    public void uploadFile(Long userId, String filename, MultipartFile file) {
         String sanitizedFilename = FileNameSanitizer.sanitize(filename);
         if (file.isEmpty()) {
             throw new EmptyFileException();
         }
-        if (storedFileRepository.existsByUserIdAndFilename(user.id(), sanitizedFilename)) {
+        if (storedFileRepository.existsByUserIdAndFilename(userId, sanitizedFilename)) {
             throw new FileAlreadyExistsException();
         }
 
-        UserEntity persistedUser = loadUser(user.id());
+        UserEntity persistedUser = loadUser(userId);
         try (InputStream content = file.getInputStream()) {
-            String storagePath = fileContentStorage.save(user.id(), sanitizedFilename, content);
+            String storagePath = fileContentStorage.save(userId, sanitizedFilename, content);
             Instant now = Instant.now(clock);
             StoredFileEntity storedFile = new StoredFileEntity(
                     persistedUser,
@@ -96,9 +95,9 @@ public class DefaultCloudFileService implements CloudFileService {
 
     @Override
     @Transactional
-    public void deleteFile(AuthenticatedUser user, String filename) {
+    public void deleteFile(Long userId, String filename) {
         String sanitizedFilename = FileNameSanitizer.sanitize(filename);
-        StoredFileEntity storedFile = storedFileRepository.findByUserIdAndFilename(user.id(), sanitizedFilename)
+        StoredFileEntity storedFile = storedFileRepository.findByUserIdAndFilename(userId, sanitizedFilename)
                 .orElseThrow(CloudFileNotFoundException::new);
         fileContentStorage.delete(storedFile.getStoragePath());
         storedFileRepository.delete(storedFile);
@@ -106,27 +105,27 @@ public class DefaultCloudFileService implements CloudFileService {
 
     @Override
     @Transactional
-    public void renameFile(AuthenticatedUser user, String sourceFilename, String targetFilename) {
+    public void renameFile(Long userId, String sourceFilename, String targetFilename) {
         String sanitizedSourceFilename = FileNameSanitizer.sanitize(sourceFilename);
         String sanitizedTargetFilename = FileNameSanitizer.sanitize(targetFilename);
         if (sanitizedSourceFilename.equals(sanitizedTargetFilename)) {
             return;
         }
-        if (storedFileRepository.existsByUserIdAndFilename(user.id(), sanitizedTargetFilename)) {
+        if (storedFileRepository.existsByUserIdAndFilename(userId, sanitizedTargetFilename)) {
             throw new FileAlreadyExistsException();
         }
 
-        StoredFileEntity storedFile = storedFileRepository.findByUserIdAndFilename(user.id(), sanitizedSourceFilename)
+        StoredFileEntity storedFile = storedFileRepository.findByUserIdAndFilename(userId, sanitizedSourceFilename)
                 .orElseThrow(CloudFileNotFoundException::new);
-        String newStoragePath = fileContentStorage.move(user.id(), storedFile.getStoragePath(), sanitizedTargetFilename);
+        String newStoragePath = fileContentStorage.move(userId, storedFile.getStoragePath(), sanitizedTargetFilename);
         storedFile.rename(sanitizedTargetFilename, newStoragePath, Instant.now(clock));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public DownloadedFile downloadFile(AuthenticatedUser user, String filename) {
+    public DownloadedFile downloadFile(Long userId, String filename) {
         String sanitizedFilename = FileNameSanitizer.sanitize(filename);
-        StoredFileEntity storedFile = storedFileRepository.findByUserIdAndFilename(user.id(), sanitizedFilename)
+        StoredFileEntity storedFile = storedFileRepository.findByUserIdAndFilename(userId, sanitizedFilename)
                 .orElseThrow(CloudFileNotFoundException::new);
 
         return new DownloadedFile(

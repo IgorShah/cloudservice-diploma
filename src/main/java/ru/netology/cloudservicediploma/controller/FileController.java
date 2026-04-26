@@ -42,7 +42,7 @@ public class FileController {
             @CurrentUser AuthenticatedUser user,
             @RequestParam(defaultValue = "100") @Min(1) @Max(1000) int limit
     ) {
-        return cloudFileService.listFiles(user, limit)
+        return cloudFileService.listFiles(user.id(), limit)
                 .stream()
                 .map(this::toFileResponse)
                 .toList();
@@ -54,7 +54,7 @@ public class FileController {
             @RequestParam String filename,
             @RequestPart("file") MultipartFile file
     ) {
-        cloudFileService.uploadFile(user, filename, file);
+        cloudFileService.uploadFile(user.id(), filename, file);
         return ResponseEntity.ok().build();
     }
 
@@ -63,7 +63,7 @@ public class FileController {
             @CurrentUser AuthenticatedUser user,
             @RequestParam String filename
     ) {
-        cloudFileService.deleteFile(user, filename);
+        cloudFileService.deleteFile(user.id(), filename);
         return ResponseEntity.ok().build();
     }
 
@@ -73,7 +73,7 @@ public class FileController {
             @RequestParam String filename,
             @Valid @RequestBody RenameFileRequest request
     ) {
-        cloudFileService.renameFile(user, filename, request.filename());
+        cloudFileService.renameFile(user.id(), filename, request.filename());
         return ResponseEntity.ok().build();
     }
 
@@ -82,7 +82,7 @@ public class FileController {
             @CurrentUser AuthenticatedUser user,
             @RequestParam String filename
     ) {
-        DownloadedFile downloadedFile = cloudFileService.downloadFile(user, filename);
+        DownloadedFile downloadedFile = cloudFileService.downloadFile(user.id(), filename);
         String contentType = downloadedFile.contentType() == null
                 ? MediaType.APPLICATION_OCTET_STREAM_VALUE
                 : downloadedFile.contentType();
