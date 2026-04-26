@@ -85,6 +85,21 @@ class CloudServiceIntegrationTest {
     }
 
     @Test
+    void requestLoggingKeepsClientRequestId() throws Exception {
+        mockMvc.perform(post("/login")
+                        .header("X-Request-Id", "test-request-1")
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "login": "user@example.com",
+                                  "password": "password"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Request-Id", "test-request-1"));
+    }
+
+    @Test
     void loginStoresTokenHashInsteadOfRawToken() throws Exception {
         String authToken = loginAndGetToken();
 

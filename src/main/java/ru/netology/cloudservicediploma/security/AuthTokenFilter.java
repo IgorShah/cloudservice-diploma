@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collections;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +21,8 @@ import ru.netology.cloudservicediploma.service.AuthenticationService;
 public class AuthTokenFilter extends OncePerRequestFilter {
 
     public static final String AUTHENTICATED_USER_ATTRIBUTE = "authenticatedUser";
+
+    private static final Logger log = LoggerFactory.getLogger(AuthTokenFilter.class);
 
     private final AuthenticationService authenticationService;
     private final HandlerExceptionResolver handlerExceptionResolver;
@@ -52,6 +56,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             }
 
             AuthenticatedUser authenticatedUser = authenticationService.authenticate(authToken);
+            log.debug("Auth token accepted: userId={}", authenticatedUser.id());
             request.setAttribute(AUTHENTICATED_USER_ATTRIBUTE, authenticatedUser);
             SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
             securityContext.setAuthentication(new UsernamePasswordAuthenticationToken(
@@ -60,10 +65,17 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                     Collections.emptyList()
             ));
             SecurityContextHolder.setContext(securityContext);
-            filterChain.doFilter(request, response);
         } catch (Exception exception) {
             SecurityContextHolder.clearContext();
+            log.debug("Auth token rejected: method={}, uri={}", request.getMethod(), request.getRequestURI());
             handlerExceptionResolver.resolveException(request, response, null, exception);
+            return;
+        }
+
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            SecurityContextHolder.clearContext();
         }
     }
 }

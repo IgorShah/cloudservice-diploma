@@ -30,6 +30,10 @@ management:
       exposure:
         include: health
 
+logging:
+  pattern:
+    level: "%5p [requestId:%X{requestId:-}]"
+
 app:
   auth:
     session-ttl: PT24H
