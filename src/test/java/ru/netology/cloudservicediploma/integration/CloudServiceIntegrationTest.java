@@ -1,5 +1,6 @@
 package ru.netology.cloudservicediploma.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -81,6 +82,15 @@ class CloudServiceIntegrationTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.auth-token").isNotEmpty());
+    }
+
+    @Test
+    void loginStoresTokenHashInsteadOfRawToken() throws Exception {
+        String authToken = loginAndGetToken();
+
+        assertThat(sessionTokenRepository.findAll())
+                .singleElement()
+                .satisfies(sessionToken -> assertThat(sessionToken.getTokenHash()).isNotEqualTo(authToken));
     }
 
     @Test

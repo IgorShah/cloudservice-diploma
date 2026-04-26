@@ -17,6 +17,7 @@ import ru.netology.cloudservicediploma.repository.UserRepository;
 import ru.netology.cloudservicediploma.security.AuthenticatedUser;
 import ru.netology.cloudservicediploma.service.AuthenticationService;
 import ru.netology.cloudservicediploma.service.TokenGenerator;
+import ru.netology.cloudservicediploma.service.TokenHasher;
 
 @Service
 public class DefaultAuthenticationService implements AuthenticationService {
@@ -25,6 +26,7 @@ public class DefaultAuthenticationService implements AuthenticationService {
     private final SessionTokenRepository sessionTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenGenerator tokenGenerator;
+    private final TokenHasher tokenHasher;
     private final Clock clock;
     private final ApplicationProperties applicationProperties;
 
@@ -34,9 +36,10 @@ public class DefaultAuthenticationService implements AuthenticationService {
             SessionTokenRepository sessionTokenRepository,
             PasswordEncoder passwordEncoder,
             TokenGenerator tokenGenerator,
+            TokenHasher tokenHasher,
             ApplicationProperties applicationProperties
     ) {
-        this(userRepository, sessionTokenRepository, passwordEncoder, tokenGenerator, Clock.systemUTC(), applicationProperties);
+        this(userRepository, sessionTokenRepository, passwordEncoder, tokenGenerator, tokenHasher, Clock.systemUTC(), applicationProperties);
     }
 
     DefaultAuthenticationService(
@@ -44,6 +47,7 @@ public class DefaultAuthenticationService implements AuthenticationService {
             SessionTokenRepository sessionTokenRepository,
             PasswordEncoder passwordEncoder,
             TokenGenerator tokenGenerator,
+            TokenHasher tokenHasher,
             Clock clock,
             ApplicationProperties applicationProperties
     ) {
@@ -51,6 +55,7 @@ public class DefaultAuthenticationService implements AuthenticationService {
         this.sessionTokenRepository = sessionTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenGenerator = tokenGenerator;
+        this.tokenHasher = tokenHasher;
         this.clock = clock;
         this.applicationProperties = applicationProperties;
     }
@@ -66,20 +71,21 @@ public class DefaultAuthenticationService implements AuthenticationService {
         }
 
         Instant now = Instant.now(clock);
+        String token = tokenGenerator.generate();
         SessionTokenEntity sessionToken = new SessionTokenEntity(
-                tokenGenerator.generate(),
+                tokenHasher.hash(token),
                 user,
                 now.plus(applicationProperties.auth().sessionTtl()),
                 true
         );
         sessionTokenRepository.save(sessionToken);
-        return new AuthTokenResponse(sessionToken.getToken());
+        return new AuthTokenResponse(token);
     }
 
     @Override
     @Transactional
     public void logout(String authToken) {
-        SessionTokenEntity sessionToken = sessionTokenRepository.findByTokenAndActiveTrue(authToken)
+        SessionTokenEntity sessionToken = sessionTokenRepository.findByTokenHashAndActiveTrue(tokenHasher.hash(authToken))
                 .orElseThrow(() -> new UnauthorizedException("Unauthorized error"));
         sessionToken.deactivate();
     }
@@ -87,7 +93,7 @@ public class DefaultAuthenticationService implements AuthenticationService {
     @Override
     @Transactional
     public AuthenticatedUser authenticate(String authToken) {
-        SessionTokenEntity sessionToken = sessionTokenRepository.findByTokenAndActiveTrue(authToken)
+        SessionTokenEntity sessionToken = sessionTokenRepository.findByTokenHashAndActiveTrue(tokenHasher.hash(authToken))
                 .orElseThrow(() -> new UnauthorizedException("Unauthorized error"));
 
         Instant now = Instant.now(clock);
