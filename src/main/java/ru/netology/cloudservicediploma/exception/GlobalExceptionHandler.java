@@ -1,6 +1,8 @@
 package ru.netology.cloudservicediploma.exception;
 
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -18,9 +20,18 @@ import ru.netology.cloudservicediploma.dto.response.ErrorResponse;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(CloudServiceException.class)
     public ResponseEntity<ErrorResponse> handleCloudServiceException(CloudServiceException exception) {
+        log.warn("Cloud service exception: status={}, message={}", exception.getStatus(), exception.getMessage());
         return ResponseEntity.status(exception.getStatus()).body(new ErrorResponse(exception.getMessage()));
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException exception) {
+        log.warn("Business exception: {}", exception.getMessage());
+        return ResponseEntity.badRequest().body(new ErrorResponse(exception.getMessage()));
     }
 
     @ExceptionHandler({MethodArgumentNotValidException.class, ConstraintViolationException.class})
@@ -56,6 +67,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpectedException(Exception exception) {
+        log.error("Unexpected application error", exception);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse("Internal server error"));
     }

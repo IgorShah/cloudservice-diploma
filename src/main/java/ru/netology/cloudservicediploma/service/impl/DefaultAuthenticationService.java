@@ -2,15 +2,16 @@ package ru.netology.cloudservicediploma.service.impl;
 
 import java.time.Clock;
 import java.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.netology.cloudservicediploma.config.ApplicationProperties;
-import ru.netology.cloudservicediploma.dto.response.AuthTokenResponse;
 import ru.netology.cloudservicediploma.entity.SessionTokenEntity;
 import ru.netology.cloudservicediploma.entity.UserEntity;
-import ru.netology.cloudservicediploma.exception.BadRequestException;
+import ru.netology.cloudservicediploma.exception.InvalidCredentialsException;
 import ru.netology.cloudservicediploma.exception.UnauthorizedException;
 import ru.netology.cloudservicediploma.repository.SessionTokenRepository;
 import ru.netology.cloudservicediploma.repository.UserRepository;
@@ -21,6 +22,8 @@ import ru.netology.cloudservicediploma.service.TokenHasher;
 
 @Service
 public class DefaultAuthenticationService implements AuthenticationService {
+
+    private static final Logger log = LoggerFactory.getLogger(DefaultAuthenticationService.class);
 
     private final UserRepository userRepository;
     private final SessionTokenRepository sessionTokenRepository;
@@ -62,12 +65,12 @@ public class DefaultAuthenticationService implements AuthenticationService {
 
     @Override
     @Transactional
-    public AuthTokenResponse login(String login, String password) {
+    public String login(String login, String password) {
         UserEntity user = userRepository.findByLogin(login)
-                .orElseThrow(() -> new BadRequestException("Bad credentials"));
+                .orElseThrow(InvalidCredentialsException::new);
 
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            throw new BadRequestException("Bad credentials");
+            throw new InvalidCredentialsException();
         }
 
         Instant now = Instant.now(clock);
@@ -79,7 +82,8 @@ public class DefaultAuthenticationService implements AuthenticationService {
                 true
         );
         sessionTokenRepository.save(sessionToken);
-        return new AuthTokenResponse(token);
+        log.info("User logged in: userId={}", user.getId());
+        return token;
     }
 
     @Override
@@ -88,6 +92,7 @@ public class DefaultAuthenticationService implements AuthenticationService {
         SessionTokenEntity sessionToken = sessionTokenRepository.findByTokenHashAndActiveTrue(tokenHasher.hash(authToken))
                 .orElseThrow(() -> new UnauthorizedException("Unauthorized error"));
         sessionToken.deactivate();
+        log.info("User logged out: userId={}", sessionToken.getUser().getId());
     }
 
     @Override
@@ -99,6 +104,7 @@ public class DefaultAuthenticationService implements AuthenticationService {
         Instant now = Instant.now(clock);
         if (sessionToken.isExpired(now)) {
             sessionToken.deactivate();
+            log.info("Expired session token deactivated: userId={}", sessionToken.getUser().getId());
             throw new UnauthorizedException("Unauthorized error");
         }
 

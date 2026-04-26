@@ -19,10 +19,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import ru.netology.cloudservicediploma.entity.StoredFileEntity;
 import ru.netology.cloudservicediploma.entity.UserEntity;
-import ru.netology.cloudservicediploma.exception.BadRequestException;
+import ru.netology.cloudservicediploma.exception.FileAlreadyExistsException;
 import ru.netology.cloudservicediploma.repository.StoredFileRepository;
 import ru.netology.cloudservicediploma.repository.UserRepository;
-import ru.netology.cloudservicediploma.security.AuthenticatedUser;
 import ru.netology.cloudservicediploma.storage.FileContentStorage;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,7 +44,6 @@ class DefaultCloudFileServiceTest {
 
     @Test
     void uploadFileStoresMetadataAndBinaryContent() {
-        AuthenticatedUser user = new AuthenticatedUser(1L, "user@example.com");
         UserEntity persistedUser = new UserEntity("user@example.com", "hash");
         MockMultipartFile multipartFile = new MockMultipartFile(
                 "file",
@@ -58,7 +56,7 @@ class DefaultCloudFileServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(persistedUser));
         when(fileContentStorage.save(eq(1L), eq("notes.txt"), any())).thenReturn(Path.of("1", "stored.txt").toString());
 
-        cloudFileService.uploadFile(user, "notes.txt", multipartFile);
+        cloudFileService.uploadFile(1L, "notes.txt", multipartFile);
 
         verify(fileContentStorage).save(eq(1L), eq("notes.txt"), any());
         verify(storedFileRepository).save(any(StoredFileEntity.class));
@@ -66,17 +64,15 @@ class DefaultCloudFileServiceTest {
 
     @Test
     void renameFileRejectsDuplicateTargetName() {
-        AuthenticatedUser user = new AuthenticatedUser(1L, "user@example.com");
         when(storedFileRepository.existsByUserIdAndFilename(1L, "renamed.txt")).thenReturn(true);
 
-        assertThatThrownBy(() -> cloudFileService.renameFile(user, "notes.txt", "renamed.txt"))
-                .isInstanceOf(BadRequestException.class)
+        assertThatThrownBy(() -> cloudFileService.renameFile(1L, "notes.txt", "renamed.txt"))
+                .isInstanceOf(FileAlreadyExistsException.class)
                 .hasMessage("File already exists");
     }
 
     @Test
     void deleteFileRemovesMetadataAndStoredContent() {
-        AuthenticatedUser user = new AuthenticatedUser(1L, "user@example.com");
         UserEntity persistedUser = new UserEntity("user@example.com", "hash");
         StoredFileEntity storedFile = new StoredFileEntity(
                 persistedUser,
@@ -89,7 +85,7 @@ class DefaultCloudFileServiceTest {
         );
         when(storedFileRepository.findByUserIdAndFilename(1L, "notes.txt")).thenReturn(Optional.of(storedFile));
 
-        cloudFileService.deleteFile(user, "notes.txt");
+        cloudFileService.deleteFile(1L, "notes.txt");
 
         verify(fileContentStorage).delete(Path.of("1", "stored.txt").toString());
         verify(storedFileRepository).delete(storedFile);
