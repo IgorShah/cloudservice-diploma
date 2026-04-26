@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: cloudservice-diploma
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:cloudservice}
+    username: ${DB_USERNAME:cloudservice}
+    password: ${DB_PASSWORD:cloudservice}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+app:
+  auth:
+    session-ttl: PT24H
+  storage:
+    root-path: ${APP_STORAGE_ROOT:./storage}
+  cors:
+    allowed-origins:
+      - http://localhost:8080
+      - http://localhost:8081
+  users:
+    - login: user@example.com
+      password: password
