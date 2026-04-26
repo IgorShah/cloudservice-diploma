@@ -13,7 +13,6 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Component;
 import ru.netology.cloudservicediploma.config.ApplicationProperties;
 import ru.netology.cloudservicediploma.exception.StorageException;
-import ru.netology.cloudservicediploma.storage.FileContentStorage;
 import ru.netology.cloudservicediploma.service.FileNameSanitizer;
 
 @Component

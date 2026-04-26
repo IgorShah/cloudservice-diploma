@@ -8,10 +8,9 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import ru.netology.cloudservicediploma.config.ApplicationProperties;
 import ru.netology.cloudservicediploma.entity.UserEntity;
 import ru.netology.cloudservicediploma.repository.UserRepository;
-import ru.netology.cloudservicediploma.service.UserProvisioningService;
 
 @Service
-public class DatabaseUserProvisioningService implements UserProvisioningService {
+public class DatabaseUserProvisioningService {
 
     private final ApplicationProperties applicationProperties;
     private final UserRepository userRepository;
@@ -27,7 +26,6 @@ public class DatabaseUserProvisioningService implements UserProvisioningService 
         this.passwordEncoder = passwordEncoder;
     }
 
-    @Override
     @Transactional
     @EventListener(ApplicationReadyEvent.class)
     public void ensureUsersExist() {
